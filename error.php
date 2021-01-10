@@ -1,194 +1,126 @@
 <?php
 /**
  * @package     Joomla.Site
- * @subpackage  Templates.marielouise
+ * @subpackage  Templates.protostar
  *
- * @copyright   (C) 2017 Open Source Matters, Inc. <https://www.joomla.org>
+ * @copyright   Copyright (C) 2005 - 2015 Open Source Matters, Inc. All rights reserved.
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
-
 defined('_JEXEC') or die;
 
-use Joomla\CMS\Factory;
-use Joomla\CMS\HTML\HTMLHelper;
-use Joomla\CMS\Language\Text;
-use Joomla\CMS\Uri\Uri;
-
-/** @var JDocumentError $this */
-
-$app = Factory::getApplication();
-$wa  = $this->getWebAssetManager();
-
-// Detecting Active Variables
-$option   = $app->input->getCmd('option', '');
-$view     = $app->input->getCmd('view', '');
-$layout   = $app->input->getCmd('layout', '');
-$task     = $app->input->getCmd('task', '');
-$itemid   = $app->input->getCmd('Itemid', '');
-$sitename = htmlspecialchars($app->get('sitename'), ENT_QUOTES, 'UTF-8');
-$menu     = $app->getMenu()->getActive();
-$pageclass = $menu !== null ? $menu->getParams()->get('pageclass_sfx', '') : '';
+$app = JFactory::getApplication();
+$doc = JFactory::getDocument();
+$user = JFactory::getUser();
+$this->language = $doc->language;
+$this->direction = $doc->direction;
 
 // Getting params from template
 $params = $app->getTemplate(true)->params;
 
-// Template path
-$templatePath = 'templates/' . $this->template;
+// Detecting Active Variables
+$option = $app->input->getCmd('option', '');
+$view = $app->input->getCmd('view', '');
+$layout = $app->input->getCmd('layout', '');
+$task = $app->input->getCmd('task', '');
+$itemid = $app->input->getCmd('Itemid', '');
+$sitename = $app->get('sitename');
 
-// Color Theme
-$paramsColorName = $params->get('colorName', 'colors_standard');
-$assetColorName  = 'theme.' . $paramsColorName;
-$wa->registerAndUseStyle($assetColorName, $templatePath . '/css/global/' . $paramsColorName . '.css');
-$this->getPreloadManager()->prefetch($wa->getAsset('style', $assetColorName)->getUri(), ['as' => 'style']);
-
-// Use a font scheme if set in the template style options
-$paramsFontScheme = $params->get('useFontScheme', false);
-
-if ($paramsFontScheme)
-{
-	// Prefetch the stylesheet for the font scheme, actually we need to prefetch the font(s)
-	$assetFontScheme  = 'fontscheme.' . $paramsFontScheme;
-	$wa->registerAndUseStyle($assetFontScheme, $templatePath . '/css/global/' . $paramsFontScheme . '.css');
-	$this->getPreloadManager()->prefetch($wa->getAsset('style', $assetFontScheme)->getUri(), ['as' => 'style']);
-}
-
-// Enable assets
-$wa->usePreset('template.marielouise.' . ($this->direction === 'rtl' ? 'rtl' : 'ltr'))
-	->useStyle('template.active.language')
-	->useStyle('template.user')
-	->useScript('template.user');
-
-// Override 'template.active' asset to set correct ltr/rtl dependency
-$wa->registerStyle('template.active', '', [], [], ['template.marielouise.' . ($this->direction === 'rtl' ? 'rtl' : 'ltr')]);
-
-// Browsers support SVG favicons
-$this->addHeadLink(HTMLHelper::_('image', 'joomla-favicon.svg', '', [], true, 1), 'icon', 'rel', ['type' => 'image/svg+xml']);
-$this->addHeadLink(HTMLHelper::_('image', 'favicon.ico', '', [], true, 1), 'alternate icon', 'rel', ['type' => 'image/vnd.microsoft.icon']);
-$this->addHeadLink(HTMLHelper::_('image', 'joomla-favicon-pinned.svg', '', [], true, 1), 'mask-icon', 'rel', ['color' => '#000']);
-
-// Logo file or site title param
-if ($this->params->get('logoFile'))
-{
-	$logo = '<img src="' . Uri::root() . htmlspecialchars($params->get('logoFile'), ENT_QUOTES) . '" alt="' . $sitename . '">';
-}
-elseif ($this->params->get('siteTitle'))
-{
-	$logo = '<span title="' . $sitename . '">' . htmlspecialchars($params->get('siteTitle'), ENT_COMPAT, 'UTF-8') . '</span>';
-}
-else
-{
-	$logo = '<img src="' . $this->baseurl . '/' . $templatePath. '/images/logo.svg" class="logo d-inline-block" alt="' . $sitename . '">';
-}
-
-// Container
-$wrapper = $params->get('fluidContainer') ? 'wrapper-fluid' : 'wrapper-static';
-
-$this->setMetaData('viewport', 'width=device-width, initial-scale=1');
+// Add JavaScript Frameworks
+JHtml::_('jquery.framework');
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $this->language; ?>" dir="<?php echo $this->direction; ?>">
-<head>
-	<jdoc:include type="metas" />
-	<jdoc:include type="styles" />
-	<jdoc:include type="scripts" />
-</head>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="<?php echo $this->language; ?>" lang="<?php echo $this->language; ?>" dir="<?php echo $this->direction; ?>">
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <title><?php echo $this->title; ?> <?php echo htmlspecialchars($this->error->getMessage(), ENT_QUOTES, 'UTF-8'); ?></title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link rel="stylesheet" href="<?php echo $this->baseurl; ?>/templates/<?php echo $this->template; ?>/css/template.css" type="text/css" />
+            <link rel="stylesheet" href="<?php echo $this->baseurl; ?>/templates/<?php echo $this->template; ?>/css/bootstrap.min.css" type="text/css" />
+            <link rel="stylesheet" href="<?php echo $this->baseurl; ?>/templates/<?php echo $this->template; ?>/css/font-awesome.min.css" type="text/css" />
+            <?php if ($app->get('debug_lang', '0') == '1' || $app->get('debug', '0') == '1') : ?>
+                <link rel="stylesheet" href="<?php echo $this->baseurl; ?>/media/cms/css/debug.css" type="text/css" />
+            <?php endif; ?>
+            <link href="<?php echo $this->baseurl; ?>/templates/<?php echo $this->template; ?>/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon" />
+            <!--[if lt IE 9]>
+                    <script src="<?php echo $this->baseurl; ?>/media/jui/js/html5.js"></script>
+            <![endif]-->
+    </head>
 
-<body class="site-grid site error_site <?php echo $option
-	. ' ' . $wrapper
-	. ' view-' . $view
-	. ($layout ? ' layout-' . $layout : ' no-layout')
-	. ($task ? ' task-' . $task : ' no-task')
-	. ($itemid ? ' itemid-' . $itemid : '')
-	. ' ' . $pageclass;
-	echo ($this->direction == 'rtl' ? ' rtl' : '');
-?>">
-	<header class="header container-header full-width">
-		<div class="grid-child">
-			<div class="navbar-brand">
-				<a class="brand-logo" href="<?php echo $this->baseurl; ?>/">
-					<?php echo $logo; ?>
-				</a>
-				<?php if ($params->get('siteDescription')) : ?>
-					<div class="site-description"><?php echo htmlspecialchars($params->get('siteDescription')); ?></div>
-				<?php endif; ?>
-			</div>
-		</div>
-		<?php if ($this->countModules('menu') || $this->countModules('search')) : ?>
-			<div class="grid-child container-nav">
-				<?php if ($this->countModules('menu')) : ?>
-					<nav class="navbar navbar-expand-md">
-						<button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="<?php echo Text::_('TPL_CASSIOPEIA_TOGGLE'); ?>">
-							<span class="icon-menu" aria-hidden="true"></span>
-						</button>
-						<div class="collapse navbar-collapse" id="navbar">
-							<jdoc:include type="modules" name="menu" style="none" />
-						</div>
-					</nav>
-				<?php endif; ?>
-				<?php if ($this->countModules('search')) : ?>
-					<div class="container-search">
-						<div class="form-inline">
-							<jdoc:include type="modules" name="search" style="none" />
-						</div>
-					</div>
-				<?php endif; ?>
-			</div>
-		<?php endif; ?>
-	</header>
+    <body class="site <?php
+    echo $option
+    . ' view-' . $view
+    . ($layout ? ' layout-' . $layout : ' no-layout')
+    . ($task ? ' task-' . $task : ' no-task')
+    . ($itemid ? ' itemid-' . $itemid : '')
+    . ($params->get('fluidContainer') ? ' fluid' : '');
+    ?>">
 
-	<div class="grid-child container-component">
-		<h1 class="page-header"><?php echo Text::_('JERROR_LAYOUT_PAGE_NOT_FOUND'); ?></h1>
-		<div class="card">
-			<div class="card-body">
-				<jdoc:include type="message" />
-				<p><strong><?php echo Text::_('JERROR_LAYOUT_ERROR_HAS_OCCURRED_WHILE_PROCESSING_YOUR_REQUEST'); ?></strong></p>
-				<p><?php echo Text::_('JERROR_LAYOUT_NOT_ABLE_TO_VISIT'); ?></p>
-				<ul>
-					<li><?php echo Text::_('JERROR_LAYOUT_AN_OUT_OF_DATE_BOOKMARK_FAVOURITE'); ?></li>
-					<li><?php echo Text::_('JERROR_LAYOUT_MIS_TYPED_ADDRESS'); ?></li>
-					<li><?php echo Text::_('JERROR_LAYOUT_SEARCH_ENGINE_OUT_OF_DATE_LISTING'); ?></li>
-					<li><?php echo Text::_('JERROR_LAYOUT_YOU_HAVE_NO_ACCESS_TO_THIS_PAGE'); ?></li>
-				</ul>
-				<p><?php echo Text::_('JERROR_LAYOUT_GO_TO_THE_HOME_PAGE'); ?></p>
-				<p><a href="<?php echo $this->baseurl; ?>/index.php" class="btn btn-secondary"><span class="icon-home" aria-hidden="true"></span> <?php echo Text::_('JERROR_LAYOUT_HOME_PAGE'); ?></a></p>
-				<hr>
-				<p><?php echo Text::_('JERROR_LAYOUT_PLEASE_CONTACT_THE_SYSTEM_ADMINISTRATOR'); ?></p>
-				<blockquote>
-					<span class="badge badge-secondary"><?php echo $this->error->getCode(); ?></span> <?php echo htmlspecialchars($this->error->getMessage(), ENT_QUOTES, 'UTF-8'); ?>
-				</blockquote>
-				<?php if ($this->debug) : ?>
-					<div>
-						<?php echo $this->renderBacktrace(); ?>
-						<?php // Check if there are more Exceptions and render their data as well ?>
-						<?php if ($this->error->getPrevious()) : ?>
-							<?php $loop = true; ?>
-							<?php // Reference $this->_error here and in the loop as setError() assigns errors to this property and we need this for the backtrace to work correctly ?>
-							<?php // Make the first assignment to setError() outside the loop so the loop does not skip Exceptions ?>
-							<?php $this->setError($this->_error->getPrevious()); ?>
-							<?php while ($loop === true) : ?>
-								<p><strong><?php echo Text::_('JERROR_LAYOUT_PREVIOUS_ERROR'); ?></strong></p>
-								<p><?php echo htmlspecialchars($this->_error->getMessage(), ENT_QUOTES, 'UTF-8'); ?></p>
-								<?php echo $this->renderBacktrace(); ?>
-								<?php $loop = $this->setError($this->_error->getPrevious()); ?>
-							<?php endwhile; ?>
-							<?php // Reset the main error object to the base error ?>
-							<?php $this->setError($this->error); ?>
-						<?php endif; ?>
-					</div>
-				<?php endif; ?>
-			</div>
-		</div>
-	</div>
-
-	<?php if ($this->countModules('footer')) : ?>
-	<footer class="container-footer footer full-width">
-		<div class="grid-child">
-			<jdoc:include type="modules" name="footer" style="none" />
-		</div>
-	</footer>
-	<?php endif; ?>
-
-	<jdoc:include type="modules" name="debug" style="none" />
-
-</body>
+        <header class="navbar navbar-static-top navbar-light bg-faded" role="banner">
+            <a class="navbar-brand" href="<?php echo $this->baseurl; ?>/"><?php echo $sitename; ?></a>
+        </header>
+        <div class="body">
+            <div class="content">
+                <div class="jumbotron jumbotron-fluid bg-primary">
+                    <div class="container">
+                        <h1><?php echo JText::_('JERROR_LAYOUT_PAGE_NOT_FOUND'); ?></h1>
+                    </div>
+                </div>
+                <div class="container<?php echo ($params->get('fluidContainer') ? '-fluid' : ''); ?>">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong><?php echo JText::_('JERROR_LAYOUT_ERROR_HAS_OCCURRED_WHILE_PROCESSING_YOUR_REQUEST'); ?></strong></p>
+                            <p><?php echo JText::_('JERROR_LAYOUT_NOT_ABLE_TO_VISIT'); ?></p>
+                            <ul>
+                                <li><?php echo JText::_('JERROR_LAYOUT_AN_OUT_OF_DATE_BOOKMARK_FAVOURITE'); ?></li>
+                                <li><?php echo JText::_('JERROR_LAYOUT_MIS_TYPED_ADDRESS'); ?></li>
+                                <li><?php echo JText::_('JERROR_LAYOUT_SEARCH_ENGINE_OUT_OF_DATE_LISTING'); ?></li>
+                                <li><?php echo JText::_('JERROR_LAYOUT_YOU_HAVE_NO_ACCESS_TO_THIS_PAGE'); ?></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6 text-xs-center">
+                            <div class="display-1"><i class="fa fa-medkit" aria-hidden="true"></i></div>
+                            <?php if (JModuleHelper::getModule('search')) : ?>
+                                <p><strong><?php echo JText::_('JERROR_LAYOUT_SEARCH'); ?></strong></p>
+                                <p><?php echo JText::_('JERROR_LAYOUT_SEARCH_PAGE'); ?></p>
+                                <?php echo $doc->getBuffer('module', 'search'); ?>
+                            <?php endif; ?>
+                            <p><?php echo JText::_('JERROR_LAYOUT_GO_TO_THE_HOME_PAGE'); ?></p>
+                            <p><a href="<?php echo $this->baseurl; ?>/" class="btn btn-primary"><span class="fa fa-home"></span> <?php echo JText::_('JERROR_LAYOUT_HOME_PAGE'); ?></a></p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <hr />
+                            <p><?php echo JText::_('JERROR_LAYOUT_PLEASE_CONTACT_THE_SYSTEM_ADMINISTRATOR'); ?></p>
+                            <blockquote>
+                                <span class="badge badge-danger"><?php echo $this->error->getCode(); ?></span> <?php echo htmlspecialchars($this->error->getMessage(), ENT_QUOTES, 'UTF-8'); ?>
+                            </blockquote>
+                            <?php if ($this->debug) : ?>
+                                <?php echo $this->renderBacktrace(); ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer class="footer bg-faded text-muted" role="contentinfo">
+            <hr />
+            <div class="container<?php echo ($params->get('fluidContainer') ? '-fluid' : ''); ?>">
+                <div class="row">
+                    <div class="col-xs-6"><p>
+                            &copy; <?php echo date('Y'); ?> <?php echo $sitename; ?>
+                        </p>
+                    </div>
+                    <div class="col-xs-6">
+                        <p class="text-xs-right">
+                            <a href="#top" id="back-top">
+                                <i class="fa fa-arrow-up"></i> <?php echo JText::_('TPL_BOOTSTRAP4_BACKTOTOP'); ?>
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <?php echo $doc->getBuffer('modules', 'debug', array('style' => 'none')); ?>
+    </body>
 </html>
