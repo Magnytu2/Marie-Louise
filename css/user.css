@@ -1,0 +1,51 @@
+.badge-module {
+  text-align: center; }
+  .badge-module .demo-title {
+    font-size: 20px;
+    color: #010156; }
+  .badge-module .fa-joomla {
+    font-size: 32px;
+    color: #010156; }
+  .badge-module .badge {
+    position: absolute;
+    top: 10px;
+    right: 10px; }
+
+.bg-primary .badge-module .demo-title,
+.bg-primary .badge-module .fa-joomla {
+  color: rgba(255, 255, 255, 0.9); }
+
+.bg-secondary .badge-module .demo-title,
+.bg-secondary .badge-module .fa-joomla {
+  color: rgba(255, 255, 255, 0.9); }
+
+.bg-success .badge-module .demo-title,
+.bg-success .badge-module .fa-joomla {
+  color: rgba(255, 255, 255, 0.9); }
+
+.bg-info .badge-module .demo-title,
+.bg-info .badge-module .fa-joomla {
+  color: rgba(255, 255, 255, 0.9); }
+
+.bg-warning .badge-module .demo-title,
+.bg-warning .badge-module .fa-joomla {
+  color: rgba(255, 255, 255, 0.9); }
+
+.bg-danger .badge-module .demo-title,
+.bg-danger .badge-module .fa-joomla {
+  color: rgba(255, 255, 255, 0.9); }
+
+.bg-light .badge-module .demo-title,
+.bg-light .badge-module .fa-joomla {
+  color: rgba(255, 255, 255, 0.9); }
+
+.bg-dark .badge-module .demo-title,
+.bg-dark .badge-module .fa-joomla {
+  color: rgba(255, 255, 255, 0.9); }
+
+.container-bottom-a, .container-bottom-b, .container-top-a, .container-top-b {
+    padding: 1rem 0;
+}
+
+.top-header {color: #fff}
+.top-header a {color: #fff}

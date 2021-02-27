@@ -1,165 +1,243 @@
 <?php
 /**
  * @package     Joomla.Site
- * @subpackage  Templates.protostar
+ * @subpackage  Templates.cassiopeia
  *
- * @copyright   Copyright (C) 2005 - 2015 Open Source Matters, Inc. All rights reserved.
+ * @copyright   (C) 2017 Open Source Matters, Inc. <https://www.joomla.org>
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
+
 defined('_JEXEC') or die;
 
-$app = JFactory::getApplication();
-$doc = JFactory::getDocument();
-$user = JFactory::getUser();
-$this->language = $doc->language;
-$this->direction = $doc->direction;
+use Joomla\CMS\Factory;
+use Joomla\CMS\HTML\HTMLHelper;
+use Joomla\CMS\Language\Text;
+use Joomla\CMS\Uri\Uri;
 
-// Getting params from template
-$params = $app->getTemplate(true)->params;
+/** @var Joomla\CMS\Document\HtmlDocument $this */
+
+$app = Factory::getApplication();
+$wa  = $this->getWebAssetManager();
+
+// Browsers support SVG favicons
+$this->addHeadLink(HTMLHelper::_('image', 'joomla-favicon.svg', '', [], true, 1), 'icon', 'rel', ['type' => 'image/svg+xml']);
+$this->addHeadLink(HTMLHelper::_('image', 'favicon.ico', '', [], true, 1), 'alternate icon', 'rel', ['type' => 'image/vnd.microsoft.icon']);
+$this->addHeadLink(HTMLHelper::_('image', 'joomla-favicon-pinned.svg', '', [], true, 1), 'mask-icon', 'rel', ['color' => '#000']);
 
 // Detecting Active Variables
-$option = $app->input->getCmd('option', '');
-$view = $app->input->getCmd('view', '');
-$layout = $app->input->getCmd('layout', '');
-$task = $app->input->getCmd('task', '');
-$itemid = $app->input->getCmd('Itemid', '');
-$sitename = $app->get('sitename');
+$option   = $app->input->getCmd('option', '');
+$view     = $app->input->getCmd('view', '');
+$layout   = $app->input->getCmd('layout', '');
+$task     = $app->input->getCmd('task', '');
+$itemid   = $app->input->getCmd('Itemid', '');
+$sitename = htmlspecialchars($app->get('sitename'), ENT_QUOTES, 'UTF-8');
+$menu     = $app->getMenu()->getActive();
+$pageclass = $menu !== null ? $menu->getParams()->get('pageclass_sfx', '') : '';
 
-if ($task == "edit" || $layout == "form") {
-    $fullWidth = 1;
-} else {
-    $fullWidth = 0;
+// Template path
+$templatePath = 'templates/' . $this->template;
+
+// Color Theme
+$paramsColorName = $this->params->get('colorName', 'colors_standard');
+$assetColorName  = 'theme.' . $paramsColorName;
+$wa->registerAndUseStyle($assetColorName, $templatePath . '/css/global/' . $paramsColorName . '.css');
+$this->getPreloadManager()->prefetch($wa->getAsset('style', $assetColorName)->getUri(), ['as' => 'style']);
+
+// Use a font scheme if set in the template style options
+$paramsFontScheme = $this->params->get('useFontScheme', false);
+
+if ($paramsFontScheme)
+{
+	// Prefetch the stylesheet for the font scheme, actually we need to prefetch the font(s)
+	$assetFontScheme  = 'fontscheme.' . $paramsFontScheme;
+	$wa->registerAndUseStyle($assetFontScheme, $templatePath . '/css/global/' . $paramsFontScheme . '.css');
+	$this->getPreloadManager()->prefetch($wa->getAsset('style', $assetFontScheme)->getUri(), ['as' => 'style']);
 }
 
-// Add Stylesheets
-$doc->addStyleSheet($this->baseurl . '/templates/' . $this->template . '/css/bootstrap.css');
-$doc->addStyleSheet($this->baseurl . '/templates/' . $this->template . '/css/font-awesome.min.css');
-$doc->addStyleSheet($this->baseurl . '/templates/' . $this->template . '/css/template.css');
+// Enable assets
+$wa->usePreset('template.cassiopeia.' . ($this->direction === 'rtl' ? 'rtl' : 'ltr'))
+	->useStyle('template.active.language')
+	->useStyle('template.user')
+	->useScript('template.user');
 
-// Add scripts
-JHtml::_('jquery.framework');
-$doc->addScript($this->baseurl . '/templates/' . $this->template . '/js/popper.min.js');
-$doc->addScript($this->baseurl . '/templates/' . $this->template . '/js/bootstrap.js');
-$doc->addScript($this->baseurl . '/templates/' . $this->template . '/js/template.js');
+// Override 'template.active' asset to set correct ltr/rtl dependency
+$wa->registerStyle('template.active', '', [], [], ['template.cassiopeia.' . ($this->direction === 'rtl' ? 'rtl' : 'ltr')]);
 
-// Adjusting content width
-if ($this->countModules('sidebar-left') && $this->countModules('sidebar-right')) {
-    $span = "col-md-6";
-} elseif ($this->countModules('sidebar-left') && !$this->countModules('sidebar-right')) {
-    $span = "col-md-8";
-} elseif (!$this->countModules('sidebar-left') && $this->countModules('sidebar-right')) {
-    $span = "col-md-8";
-} else {
-    $span = "col-md-12";
+// Logo file or site title param
+if ($this->params->get('logoFile'))
+{
+	$logo = '<img src="' . Uri::root() . htmlspecialchars($this->params->get('logoFile'), ENT_QUOTES) . '" alt="' . $sitename . '">';
 }
+elseif ($this->params->get('siteTitle'))
+{
+	$logo = '<span title="' . $sitename . '">' . htmlspecialchars($this->params->get('siteTitle'), ENT_COMPAT, 'UTF-8') . '</span>';
+}
+else
+{
+	$logo = '<img src="' . $templatePath . '/images/logo.svg" class="logo d-inline-block" alt="' . $sitename . '">';
+}
+
+$hasClass = '';
+
+if ($this->countModules('sidebar-left', true))
+{
+	$hasClass .= ' has-sidebar-left';
+}
+
+if ($this->countModules('sidebar-right', true))
+{
+	$hasClass .= ' has-sidebar-right';
+}
+
+// Container
+$wrapper = $this->params->get('fluidContainer') ? 'wrapper-fluid' : 'wrapper-static';
+
+$this->setMetaData('viewport', 'width=device-width, initial-scale=1');
+
+$stickyHeader = $this->params->get('stickyHeader') ? 'position-sticky sticky-top' : '';
 ?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="<?php echo $this->language; ?>" lang="<?php echo $this->language; ?>" dir="<?php echo $this->direction; ?>">
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <jdoc:include type="head" />
-        <?php if($this->params->get('favicon')) { ?>
-            <link rel="shortcut icon" href="<?php echo JUri::root(true) . htmlspecialchars($this->params->get('favicon'), ENT_COMPAT, 'UTF-8'); ?>" />
-        <?php } ?>
-        <!--[if lt IE 9]>
-                <script src="<?php echo JUri::root(true); ?>/media/jui/js/html5.js"></script>
-        <![endif]-->
-    </head>
-    <body>
-        <div class="container">                 
-        <header class="navbar navbar-expand-lg navbar-light bg-light">
-			<button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-				<span class="navbar-toggler-icon"></span>
-			</button>
-			<a class="navbar-brand" href="<?php echo JURI::base(); ?>"><?php echo $app->get('sitename'); ?></a>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <jdoc:include type="modules" name="navbar-1" style="none" />
-                <jdoc:include type="modules" name="navbar-2" style="none" />
-            </div>
-            <div id="headermodule" class="span3 offset3">
-                <jdoc:include type="modules" name="search" style="none" />
-            </div>
-        </header>   
+<html lang="<?php echo $this->language; ?>" dir="<?php echo $this->direction; ?>">
+<head>
+	<jdoc:include type="metas" />
+	<jdoc:include type="styles" />
+	<jdoc:include type="scripts" />
+</head>
+
+<body class="site-grid site <?php echo $option
+	. ' ' . $wrapper
+	. ' view-' . $view
+	. ($layout ? ' layout-' . $layout : ' no-layout')
+	. ($task ? ' task-' . $task : ' no-task')
+	. ($itemid ? ' itemid-' . $itemid : '')
+	. ' ' . $pageclass
+	. $hasClass;
+	echo ($this->direction == 'rtl' ? ' rtl' : '');
+?>">
+      
+	<header class="header container-header full-width <?php echo $stickyHeader; ?>">
+      <div class="grid-child">
+        <?php if ($this->countModules('top-header', true)) : ?>
+          <div class="container-top-header d-flex justify-content-between w-100">
+            <jdoc:include type="modules" name="top-header" style="none" />        
+          </div>
+        <?php endif; ?> 
+      </div>
+		<div class="grid-child">
+      
+			<div class="navbar-brand">
+				<a class="brand-logo" href="<?php echo $this->baseurl; ?>/">
+					<?php echo $logo; ?>
+				</a>
+				<?php if ($this->params->get('siteDescription')) : ?>
+					<div class="site-description"><?php echo htmlspecialchars($this->params->get('siteDescription')); ?></div>
+				<?php endif; ?>
+			</div>
+                  
+            <?php if ($this->countModules('logo-right', true)) : ?>
+        <div class="container-logo-right">
+            <jdoc:include type="modules" name="logo-right" style="none" />        
         </div>
-                                                                         
-    
-        <div class="body">
-            <div class="content">
-                <div class="container<?php echo ($params->get('fluidContainer') ? '-fluid' : ''); ?>">
-                    <jdoc:include type="modules" name="banner" style="xhtml" />
-                    <?php if ($this->countModules('breadcrumbs')) : ?>
-                        
-                    <div class="row">
-                        <div class="col col-md">
-                           <?php if ($this->countModules('top-a')) : ?>
-	                       <div class="container-top-a">
-		                  <jdoc:include type="modules" name="top-a" style="card" />
-	                       </div>
-	                    <?php endif; ?>
-                        </div>
-                    </div>        
-                    
-                    <div class="row">
-                        <div class="col col-md">
-                           <?php if ($this->countModules('top-b')) : ?>
-	                       <div class="container-top-b">
-		                  <jdoc:include type="modules" name="top-b" style="card" />
-	                       </div>
-	                    <?php endif; ?>
-                        </div>
-                    </div> 
-                    
-                        <div class="row">
-                            <div class="col-sm-12">
-                                <jdoc:include type="modules" name="breadcrumbs" style="xhtml" />
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                    <div class="row">
-                        <?php if ($this->countModules('sidebar-left')) : ?>
-                            <div id="sidebar" class="col-md-3">
-                                <div class="sidebar-nav">
-                                    <jdoc:include type="modules" name="sidebar-left" style="xhtml" />
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                        <main id="content" role="main" class="<?php echo $span; ?>">
-                            <jdoc:include type="modules" name="position-3" style="xhtml" />
-                            <jdoc:include type="message" />
-                            <jdoc:include type="component" />
-                            <jdoc:include type="modules" name="position-2" style="none" />
-                        </main>
-                        <?php if ($this->countModules('sidebar-right')) : ?>
-                            <div id="aside" class="col-md-4">
-                                <jdoc:include type="modules" name="sidebar-right" style="xhtml" />
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <footer class="footer bg-faded text-muted" role="contentinfo">
-            <hr />
-            <div class="container<?php echo ($params->get('fluidContainer') ? '-fluid' : ''); ?>">
-                <div class="row">
-                    <div class="col-sm-4"><p>
-                            &copy; <?php echo date('Y'); ?> <?php echo $sitename; ?>
-                        </p>
-                    </div>
-                    <div class="col-sm-4 text-center">
-                        <jdoc:include type="modules" name="footer" style="none" />
-                        <p></p>
-                    </div>
-                    <div class="col-sm-4">
-                        <p class="text-right">
-                            <a href="#top" id="back-top">
-                                <i class="fa fa-arrow-up"></i> <?php echo JText::_('TPL_BOOTSTRAP4_BACKTOTOP'); ?>
-                            </a>
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </footer>
-        <jdoc:include type="modules" name="debug" style="none" />
-    </body>
+    <?php endif; ?>       
+                  
+		</div>
+		<?php if ($this->countModules('menu', true) || $this->countModules('search', true)) : ?>
+			<div class="grid-child container-nav">
+				<?php if ($this->countModules('menu', true)) : ?>
+					<nav class="navbar navbar-expand-md">
+						<?php HTMLHelper::_('bootstrap.collapse', '.navbar-toggler'); ?>
+						<button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="<?php echo Text::_('TPL_CASSIOPEIA_TOGGLE'); ?>">
+							<span class="icon-menu" aria-hidden="true"></span>
+						</button>
+						<div class="collapse navbar-collapse" id="navbar">
+							<jdoc:include type="modules" name="menu" style="none" />
+						</div>
+					</nav>
+				<?php endif; ?>
+				<?php if ($this->countModules('search', true)) : ?>
+					<div class="container-search">
+						<jdoc:include type="modules" name="search" style="none" />
+					</div>
+				<?php endif; ?>
+			</div>
+		<?php endif; ?>
+	</header>
+
+	<?php if ($this->countModules('banner', true)) : ?>
+		<div class="container-banner full-width">
+			<jdoc:include type="modules" name="banner" style="none" />
+		</div>
+	<?php endif; ?>
+
+    <?php if ($this->countModules('top-1', true)) : ?>
+	<div class="grid-child container-top-1">
+		<jdoc:include type="modules" name="top-1" style="card" />
+	</div>
+	<?php endif; ?>
+      
+	<?php if ($this->countModules('top-a', true)) : ?>
+	<div class="grid-child container-top-a">
+		<jdoc:include type="modules" name="top-a" style="card" />
+	</div>
+	<?php endif; ?>
+
+	<?php if ($this->countModules('top-b', true)) : ?>
+	<div class="grid-child container-top-b">
+		<jdoc:include type="modules" name="top-b" style="card" />
+	</div>
+	<?php endif; ?>
+
+	<?php if ($this->countModules('sidebar-left', true)) : ?>
+	<div class="grid-child container-sidebar-left">
+		<jdoc:include type="modules" name="sidebar-left" style="card" />
+	</div>
+	<?php endif; ?>
+
+	<div class="grid-child container-component">
+		<jdoc:include type="modules" name="breadcrumbs" style="none" />
+		<jdoc:include type="modules" name="main-top" style="card" />
+		<jdoc:include type="message" />
+		<main>
+		<jdoc:include type="component" />
+		</main>
+		<jdoc:include type="modules" name="main-bottom" style="card" />
+	</div>
+
+	<?php if ($this->countModules('sidebar-right', true)) : ?>
+	<div class="grid-child container-sidebar-right">
+		<jdoc:include type="modules" name="sidebar-right" style="card" />
+	</div>
+	<?php endif; ?>
+
+	<?php if ($this->countModules('bottom-a', true)) : ?>
+	<div class="grid-child container-bottom-a">
+		<jdoc:include type="modules" name="bottom-a" style="card" />
+	</div>
+	<?php endif; ?>
+
+	<?php if ($this->countModules('bottom-b', true)) : ?>
+	<div class="grid-child container-bottom-b">
+		<jdoc:include type="modules" name="bottom-b" style="card" />
+	</div>
+	<?php endif; ?>
+
+	<?php if ($this->countModules('footer', true)) : ?>
+	<footer class="container-footer footer full-width">
+		<div class="grid-child">
+			<jdoc:include type="modules" name="footer" style="none" />
+		</div>
+	</footer>
+	<?php endif; ?>
+
+	<?php if ($this->params->get('backTop') == 1) : ?>
+		<div class="back-to-top-wrapper">
+			<a href="#top" id="back-top" class="back-to-top-link" aria-label="<?php echo Text::_('TPL_CASSIOPEIA_BACKTOTOP'); ?>">
+				<span class="icon-arrow-up icon-fw" aria-hidden="true"></span>
+			</a>
+		</div>
+	<?php endif; ?>
+
+	<jdoc:include type="modules" name="debug" style="none" />
+
+</body>
 </html>
